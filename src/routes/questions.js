@@ -6,17 +6,7 @@ const questions = require("../data/questions");
 // GET /questions 
 // List all questions
 router.get("/", (req, res) => {
-    const { keyword } = req.query;
-
-    if (!keyword) {
-        return res.json(questions);
-    }
-
-    const filteredQuestions = questions.filter(question =>
-        question.keywords.includes(keyword.toLowerCase())
-    );
-
-    res.json(filteredQuestions);
+    res.json(questions);
 });
 
 // GET /questions/:questionId
@@ -34,7 +24,7 @@ router.get("/:questionId", (req, res) => {
 });
 
 // QUESTION /api/questions
-router.question("/", (req, res) => {
+router.post("/", (req, res) => {
     const {q, a} = req.body;
     if (!q || !a) {
         return res.status(400).json({msg: "Question and answer are required."})
