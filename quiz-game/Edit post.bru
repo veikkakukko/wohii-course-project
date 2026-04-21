@@ -5,14 +5,18 @@ meta {
 }
 
 put {
-  url: {{baseURL}}/5
+  url: {{baseURL}}/3
   body: json
   auth: none
 }
 
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImlhdCI6MTc3Njc3MzAyMCwiZXhwIjoxNzc2Nzc2NjIwfQ.9FQ28TciuFzu-sQYhKZz4rZTKYZfUZSkqCxvPhrmY4o
+}
+
 body:json {
   {
-    "q": "modified",
-    "a": "modified"
+    "q": "modified2",
+    "a": "modified2"
   }
 }
