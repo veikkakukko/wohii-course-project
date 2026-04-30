@@ -7,7 +7,8 @@ const multer = require("multer");
 const path = require("path");
 
 // homma jäi siihen, että keywordien käyttö pitää vielä päivittää koko systeemiin.
-// Lisäksi frontend ei ihan kunnolla toimi
+// Lisäksi frontend ei ihan kunnolla toimi.
+// Muuta like-toiminnallisuus correct/solvediksi!
 
 const storage = multer.diskStorage({
     destination: path.join(__dirname, "..", "..", "public", "uploads"),
