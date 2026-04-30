@@ -4,14 +4,14 @@ meta {
   seq: 1
 }
 
-get {
-  url: http://localhost:3000/api/questions
+post {
+  url: http://localhost:3000/api/questions/1/like
   body: json
   auth: none
 }
 
 headers {
-  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImlhdCI6MTc3Njc3MzAyMCwiZXhwIjoxNzc2Nzc2NjIwfQ.9FQ28TciuFzu-sQYhKZz4rZTKYZfUZSkqCxvPhrmY4o
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImlhdCI6MTc3NzU1NDMxNSwiZXhwIjoxNzc3NTU3OTE1fQ.4BESc_0T68rYc4U_yTL8JnEI9gxqoWVU3o6ZsWhU0RM
 }
 
 body:form-urlencoded {
