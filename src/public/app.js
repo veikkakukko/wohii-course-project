@@ -155,12 +155,12 @@ async function loadQuestions(keyword = "", page = 1) {
           (q) => `
         <article class="question-card ${q[CONFIG.API_FIELDS.SOLVED] ? "solved-card" : ""}">
           <h3>
-            <a href="#" class="question-link" data-id="${q.id}">${q.question}</a>
+            <a href="#" class="question-link" data-id="${q.id}">${q.q}</a>
             ${q[CONFIG.API_FIELDS.SOLVED] ? `<span class="badge-solved">Solved</span>` : ""}
           </h3>
           ${
             q.keywords && q.keywords.length
-              ? `<div class="question-keywords">${q.keywords.map((k) => `<span class="keyword">${k}</span>`).join("")}</div>`
+              ? `<div class="question-keywords">${q.keywords.map((k) => `<span class="keyword">${k.name}</span>`).join("")}</div>`
               : ""
           }
           <div class="question-actions">
@@ -246,19 +246,20 @@ async function loadQuestionDetail(qId) {
 
   try {
     const q = await apiFetch(`${CONFIG.ROUTES.QUESTIONS}/${qId}`);
+    console.log(q);
     const currentUserId = getCurrentUserId();
     const isOwner = q.userId === currentUserId;
 
     container.innerHTML = `
       <a href="#" id="back-btn" class="back-link">&larr; Back to questions</a>
       <article class="question-card question-detail">
-        <h3>${q.question} ${q[CONFIG.API_FIELDS.SOLVED] ? `<span class="badge-solved">Solved</span>` : ""}</h3>
+        <h3>${q.q} ${q[CONFIG.API_FIELDS.SOLVED] ? `<span class="badge-solved">Solved</span>` : ""}</h3>
         <p class="question-meta">by ${q.userName || "Unknown"}</p>
         ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="">` : ""}
-        <p class="question-answer">${q.answer}</p>
+        <p class="question-answer">${q.a}</p>
         ${
           q.keywords && q.keywords.length
-            ? `<div class="question-keywords">${q.keywords.map((k) => `<span class="keyword">${k}</span>`).join("")}</div>`
+            ? `<div class="question-keywords">${q.keywords.map((k) => `<span class="keyword">${k.name}</span>`).join("")}</div>`
             : ""
         }
         ${
@@ -289,7 +290,7 @@ async function loadQuestionDetail(qId) {
 async function showQuestionForm(qId) {
   const container = document.getElementById("questions-container");
   const isEdit = !!qId;
-  let q = { question: "", answer: "", keywords: [] };
+  let q = { q: "", a: "", keywords: [] };
 
   if (isEdit) {
     try {
@@ -307,11 +308,11 @@ async function showQuestionForm(qId) {
       <form id="question-form" enctype="multipart/form-data">
         <div class="form-group">
           <label for="q-question">Question</label>
-          <input type="text" id="q-question" value="${q.question}" required />
+          <input type="text" id="q-question" value="${q.q}" required />
         </div>
         <div class="form-group">
           <label for="q-answer">Answer</label>
-          <textarea id="q-answer" rows="4" required>${q.answer}</textarea>
+          <textarea id="q-answer" rows="4" required>${q.a}</textarea>
         </div>
         <div class="form-group">
           <label for="q-keywords">Keywords (comma-separated)</label>
@@ -338,8 +339,8 @@ async function showQuestionForm(qId) {
     errorEl.textContent = "";
 
     const body = new FormData();
-    body.append("question", document.getElementById("q-question").value);
-    body.append("answer", document.getElementById("q-answer").value);
+    body.append("q", document.getElementById("q-question").value);
+    body.append("a", document.getElementById("q-answer").value);
     body.append("keywords", document.getElementById("q-keywords").value);
     const imageFile = document.getElementById("q-image").files[0];
     if (imageFile) body.append("image", imageFile);
@@ -368,11 +369,11 @@ async function playQuestion(qId) {
     container.innerHTML = `
       <a href="#" id="back-btn" class="back-link">&larr; Back to questions</a>
       <div class="question-form-wrapper" style="text-align:center">
-        <div class="play-question-text">${q.question}</div>
+        <div class="play-question-text">${q.q}</div>
         ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="" style="margin:0 auto 1rem">` : ""}
         ${
           q.keywords && q.keywords.length
-            ? `<div class="question-keywords" style="justify-content:center;margin-bottom:1.5rem">${q.keywords.map((k) => `<span class="keyword">${k}</span>`).join("")}</div>`
+            ? `<div class="question-keywords" style="justify-content:center;margin-bottom:1.5rem">${q.keywords.map((k) => `<span class="keyword">${k.name}</span>`).join("")}</div>`
             : ""
         }
         <form id="play-form" style="text-align:left">

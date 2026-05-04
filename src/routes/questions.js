@@ -6,12 +6,10 @@ const isOwner = require("../middleware/isOwner");
 const multer = require("multer");
 const path = require("path");
 
-// homma jäi siihen, että keywordien käyttö pitää vielä päivittää koko systeemiin.
-// Lisäksi frontend ei ihan kunnolla toimi.
-// Muuta like-toiminnallisuus correct/solvediksi!
+
 
 const storage = multer.diskStorage({
-    destination: path.join(__dirname, "..", "..", "public", "uploads"),
+    destination: path.join(__dirname, "..", "public", "uploads"),
     filename: (req, file, cb) => {
         const ext = path.extname(file.originalname);
         const newName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`
@@ -34,11 +32,9 @@ function formatQuestion(question) {
     return {
         ...question,
         userName: question.user ? question.user.name : null,
-        likeCount: question._count?.likes ?? 0,
-        liked: question.likes ? question.likes.length > 0 : false,
+        solved: question.attempts?.[0]?.correctness ?? false,
         user: undefined,
-        likes: undefined,
-        _count: undefined,
+        attempts: undefined, 
     }
 }
 
@@ -56,16 +52,15 @@ router.get("/", async (req, res) => {
     { keywords: { some: { name: keyword } } } : {};
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.page)) || 5);
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit)) || 5);
     const skip = (page - 1) * limit;
 
     const [retrievedQuestions, total] = await Promise.all([prisma.question.findMany({
         where,
         include: { 
             keywords: true,
-            user: true ,
-            likes: { where : { userId: req.user.userId }, take: 1 },
-            _count: { select: { likes: true } },
+            user: true,
+            attempts: { where: { userId: req.user.userId }, take: 1 },
         },
         orderBy: { id: "asc" },
         skip,
@@ -90,8 +85,9 @@ router.get("/:questionId", async (req, res) => {
         where: { id: questionId },
         include: {
             user: true ,
-            likes: { where : { userId: req.user.userId }, take: 1 },
-            _count: { select: { likes: true } },
+            keywords: true,
+            attempts: { where: { userId: req.user.userId }, take: 1 },
+            //correctness: { select: { correctness: true } },
         },
     });
 
@@ -110,10 +106,11 @@ router.post("/", upload.single("image"), async (req, res) => {
         return res.status(400).json({msg: "Question and answer are required."})
     }
 
-    const imageUrl = req.file ? `/uploads/${req.file.filename}`:null;
+    //const imageUrl = req.file ? `/uploads/${req.file.filename}`:null;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const newQuestion = await prisma.question.create({
-        data: {q, a, userId: req.user.userId}
+        data: {q, a, userId: req.user.userId, imageUrl: imageUrl},
     });
 
     res.status(201).json(formatQuestion(newQuestion));
@@ -150,39 +147,53 @@ router.put("/:questionId", isOwner, upload.single("image"), async (req, res) => 
         },
         include: { 
             user: true ,
-            likes: { where : { userId: req.user.userId }, take: 1 },
-            _count: { select: { likes: true } },
+            correctness: { select: { correctness: true } },
         },
     });
 
     res.status(201).json(formatQuestion(updatedQuestion));
 });
 
-// like
-// POST /questions/:questionId/like
-router.post("/:questionId/like", async (req, res) => {
+// play
+// POST /questions/:questionId/play
+router.post("/:questionId/play", async (req, res) => {
     const questionId = Number(req.params.questionId);
+    const { answer } = req.body;
 
     const question = await prisma.question.findUnique({ where: { id: questionId } });
     if (!question) {
         return res.status(404).json({ message: "Question not found" });
     }
 
-    const like = await prisma.like.upsert({
-        where: { userId_questionId: { userId: req.user.userId, questionId } },
-        update: {},
-        create: { userId: req.user.userId, questionId },
-    });
+    const correctAnswer = question.a;
 
-    const likeCount = await prisma.like.count({ where: { questionId } });
+    const isCorrect = ( correctAnswer == answer );
+
+    const attempt = await prisma.attempt.upsert({
+        where: { userId_questionId: { userId: req.user.userId, questionId } },
+        update: { correctness: isCorrect },
+        create: { userId: req.user.userId, questionId, correctness: isCorrect },
+    });
 
     res.status(201).json({
-        id: like.id,
-        questionId,
-        liked: true,
-        likeCount,
-        createdAt: like.createdAt,
+        id: attempt.id,
+        correct: isCorrect,
+        submittedAnswer: answer,
+        correctAnswer: correctAnswer,
+        createdAt: attempt.createdAt,
     });
+
+    // Expected response example:
+    //{
+    //    "id”: 1, // id in the database of attempt id
+    //    "correct": true ,
+    //    "submittedAnswer": ”Helsinki”,
+    //    "correctAnswer": ”Helsinki”,
+    //    "createdAt": “2026-04-29 20:00” // timestamp when it was submitted
+    //}
+
+
+
 });
 
 // unlike
@@ -216,11 +227,6 @@ router.delete("/:questionId", isOwner, async (req, res) => {
 
     await prisma.question.delete({ 
         where: { id: questionId },
-        include: { 
-            user: true ,
-            likes: { where : { userId: req.user.userId }, take: 1 },
-            _count: { select: { likes: true } },
-        },
     });
 
     res.json({
